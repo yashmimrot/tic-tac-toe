@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+      color: #f8fafc;
+      letter-spacing: -0.5px;
+    }
+
+    /* Setup */
+    #setup {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: #6366f1; }
+
+    .row { display: flex; gap: 12px; }
+    .row .field { flex: 1; }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 20px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      width: 100%;
+      background: #6366f1;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) { background: #4f46e5; }
+
+    .btn-ghost {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+
+    .btn-ghost:hover { background: #273548; color: #e2e8f0; }
+
+    /* Game */
+    #game { display: none; flex-direction: column; align-items: center; gap: 20px; }
+
+    .status-bar {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px 18px;
+      text-align: center;
+    }
+
+    .status-bar .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .status-bar .value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .status-bar .value .piece {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 0.9rem;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .piece.X { background: #312e81; color: #a5b4fc; }
+    .piece.O { background: #1c3a4a; color: #67e8f9; }
+
+    #board {
+      display: grid;
+      gap: 6px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken):not(.disabled) {
+      background: #273548;
+      border-color: #6366f1;
+    }
+
+    .cell.taken { cursor: default; }
+    .cell.disabled { cursor: not-allowed; }
+    .cell.X { color: #818cf8; }
+    .cell.O { color: #22d3ee; }
+    .cell.winner-cell { border-color: #fbbf24; background: #2d2507; }
+
+    .players {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .player-card {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    .player-card .player-name { font-size: 0.95rem; font-weight: 600; }
+    .player-card .player-piece { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    .player-card.active { border-color: #6366f1; background: #1a1a3a; }
+
+    .error {
+      background: #450a0a;
+      border: 1px solid #7f1d1d;
+      color: #fca5a5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      width: 100%;
+      text-align: center;
+      display: none;
+    }
+
+    .game-over .status-bar { border-color: #fbbf24; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Tic Tac Toe</h1>
+
+  <!-- Setup Screen -->
+  <div id="setup">
+    <div class="row">
+      <div class="field">
+        <label>Player 1 Name</label>
+        <input id="p1" type="text" value="Alice" />
+      </div>
+      <div class="field">
+        <label>Player 2 Name</label>
+        <input id="p2" type="text" value="Bob" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Board Size</label>
+      <input id="boardSize" type="number" min="3" max="10" value="3" />
+    </div>
+    <div id="setupError" class="error"></div>
+    <button class="btn-primary" onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game">
+    <div class="players" id="players"></div>
+    <div class="status-bar" id="statusBar">
+      <div class="label">Status</div>
+      <div class="value" id="statusValue">Loading...</div>
+    </div>
+    <div id="error" class="error"></div>
+    <div id="board"></div>
+    <button class="btn-ghost" onclick="resetGame()">New Game</button>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:8080/api/games';
+  let gameId = null;
+  let gameState = null;
+
+  async function startGame() {
+    const p1 = document.getElementById('p1').value.trim();
+    const p2 = document.getElementById('p2').value.trim();
+    const size = parseInt(document.getElementById('boardSize').value);
+    const errEl = document.getElementById('setupError');
+
+    if (!p1 || !p2) { showError(errEl, 'Both player names are required.'); return; }
+    if (size < 3 || size > 10) { showError(errEl, 'Board size must be between 3 and 10.'); return; }
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerNames: [p1, p2], boardSize: size }),
+      });
+      if (!res.ok) { showError(errEl, await res.text()); return; }
+      const data = await res.json();
+      gameId = data.gameId;
+      render(data);
+      document.getElementById('setup').style.display = 'none';
+      document.getElementById('game').style.display = 'flex';
+    } catch (e) {
+      showError(errEl, 'Could not connect to server. Is it running on port 8080?');
+    }
+  }
+
+  async function makeMove(row, col) {
+    if (!gameId) return;
+    const errEl = document.getElementById('error');
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}/${gameId}/moves`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ row, col }),
+      });
+      const text = await res.text();
+      if (!res.ok) { showError(errEl, text); return; }
+      render(JSON.parse(text));
+    } catch (e) {
+      showError(errEl, 'Network error. Please try again.');
+    }
+  }
+
+  function render(state) {
+    gameState = state;
+    const { board, currentPlayer, status, winner, players } = state;
+    const n = board.length;
+    const isOver = status !== 'IN_PROGRESS';
+
+    // Players
+    const playersEl = document.getElementById('players');
+    playersEl.innerHTML = players.map(p => `
+      <div class="player-card ${currentPlayer && currentPlayer.name === p.name ? 'active' : ''}">
+        <div class="player-name">${esc(p.name)}</div>
+        <div class="player-piece"><span class="piece ${p.piece}">${p.piece}</span></div>
+      </div>
+    `).join('');
+
+    // Status bar
+    const statusBar = document.getElementById('statusBar');
+    const statusValue = document.getElementById('statusValue');
+    statusBar.className = 'status-bar' + (isOver ? ' game-over' : '');
+
+    if (status === 'IN_PROGRESS' && currentPlayer) {
+      statusValue.innerHTML = `${esc(currentPlayer.name)}'s turn <span class="piece ${currentPlayer.piece}">${currentPlayer.piece}</span>`;
+    } else if (status === 'WON' && winner) {
+      statusValue.innerHTML = `${esc(winner.name)} wins! <span class="piece ${winner.piece}">${winner.piece}</span>`;
+    } else if (status === 'DRAW') {
+      statusValue.textContent = "It's a draw!";
+    } else {
+      statusValue.textContent = status;
+    }
+
+    // Board
+    const boardEl = document.getElementById('board');
+    const cellSize = Math.min(100, Math.floor(400 / n));
+    boardEl.style.gridTemplateColumns = `repeat(${n}, ${cellSize}px)`;
+    boardEl.innerHTML = '';
+
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        const val = board[r][c];
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (val ? ' taken ' + val : '') + (isOver ? ' disabled' : '');
+        cell.style.width = cellSize + 'px';
+        cell.style.height = cellSize + 'px';
+        cell.style.fontSize = Math.floor(cellSize * 0.45) + 'px';
+        cell.textContent = val === 'X' ? '✕' : val === 'O' ? '○' : '';
+        if (!val && !isOver) cell.onclick = () => makeMove(r, c);
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  function resetGame() {
+    gameId = null;
+    gameState = null;
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('setup').style.display = 'flex';
+  }
+
+  function showError(el, msg) {
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function esc(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('setup').style.display !== 'none') startGame();
+  });
+</script>
+</body>
+</html>
